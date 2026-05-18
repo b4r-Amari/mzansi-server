@@ -1,0 +1,11 @@
+.env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.git
+.gitignore
+*.md
+run.bat
+seed_*.py
+test_*.py
