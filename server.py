@@ -1590,6 +1590,32 @@ async def delete_daily_route(route_id: str, current_user: dict = Depends(get_cur
 
 # ==================== REPORTS ENDPOINTS ====================
 
+@api_router.get("/reports")
+async def get_all_reports(current_user: dict = Depends(get_current_user)):
+    """Get all generated reports (company-scoped)"""
+    if not is_admin_or_manager(current_user):
+        raise HTTPException(status_code=403, detail="Admin or Manager access required")
+    
+    cf = get_company_filter(current_user)
+    # Get daily routes as reports
+    daily_routes = await db.daily_routes.find(cf).sort("date", -1).to_list(100)
+    
+    reports = []
+    for dr in daily_routes:
+        reports.append({
+            "id": str(dr["_id"]),
+            "type": "daily_route",
+            "date": dr.get("date", ""),
+            "route_name": dr.get("route_name", ""),
+            "driver_name": dr.get("driver_name", ""),
+            "status": dr.get("status", ""),
+            "sales_count": dr.get("sales_count", 0),
+            "total_collected": dr.get("total_collected", 0),
+            "created_at": dr.get("started_at", dr.get("created_at"))
+        })
+    
+    return reports
+
 @api_router.get("/reports/daily-summary")
 async def get_daily_summary(date_str: Optional[str] = None, current_user: dict = Depends(get_current_user)):
     if not date_str:
@@ -2590,6 +2616,13 @@ async def update_customer_prices(
     return {"message": "Customer prices updated", "customer_id": customer_id}
 
 # ==================== STOCK MANAGEMENT ENDPOINTS ====================
+
+@api_router.get("/stock")
+async def get_all_stock(current_user: dict = Depends(get_current_user)):
+    """Get all stock records (company-scoped)"""
+    cf = get_company_filter(current_user)
+    stock_records = await db.stock.find(cf).to_list(500)
+    return [str_id(s) for s in stock_records]
 
 @api_router.get("/stock/levels")
 async def get_stock_levels(current_user: dict = Depends(get_current_user)):
