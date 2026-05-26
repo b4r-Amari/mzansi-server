@@ -48,20 +48,20 @@ db = client[db_name]
 # Create the main app
 app = FastAPI(title="Mzansi FMCG Tracker API")
 
-# CORS Configuration - Allow frontend to access API
+# CORS Configuration
+# Covers: localhost (dev), Vercel (browser), EAS/APK (native - no Origin header)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:8081",
         "http://localhost:3000",
-        "http://127.0.0.1:8081",
+        "http://localhost:8081",
         "http://127.0.0.1:3000",
-        "*"
+        "http://127.0.0.1:8081",
     ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=False,
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 # Create a router with the /api prefix
@@ -5195,14 +5195,6 @@ async def delete_document(collection_name: str, doc_id: str, current_user: dict 
 
 # Include the router in the main app
 app.include_router(api_router)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
