@@ -1371,6 +1371,123 @@ async def get_customer_sales(customer_id: str):
 
 # ==================== DAILY ROUTE ENDPOINTS ====================
 
+@api_router.post("/daily-routes/create-pending")
+async def create_pending_daily_route(data: dict = Body(...), current_user: dict = Depends(get_current_user)):
+    """Create a pending daily route (admin creates before dispatch)"""
+    if not is_admin_or_manager(current_user):
+        raise HTTPException(status_code=403, detail="Admin or Manager access required")
+    
+    route_id = data.get("route_id")
+    vehicle_id = data.get("vehicle_id")
+    driver_id = data.get("driver_id")
+    
+    if not route_id or not vehicle_id:
+        raise HTTPException(status_code=400, detail="route_id and vehicle_id are required")
+    
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    company_id = current_user.get("company_id", "")
+    
+    # Check if route already has a pending/dispatched daily route today
+    existing = await db.daily_routes.find_one({
+        "route_id": route_id,
+        "date": today,
+        "status": {"$in": ["pending", "dispatched", "active"]},
+        "company_id": company_id
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="This route already has a pending or active daily route today")
+    
+    # Get route and vehicle info
+    route = await db.routes.find_one({"_id": ObjectId(route_id)})
+    if not route:
+        raise HTTPException(status_code=404, detail="Route not found")
+    
+    vehicle = await db.vehicles.find_one({"_id": ObjectId(vehicle_id)})
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    # Get driver info if provided
+    driver_name = None
+    if driver_id:
+        driver = await db.users.find_one({"_id": ObjectId(driver_id)})
+        if driver:
+            driver_name = driver.get("name", "")
+    
+    daily_route = {
+        "route_id": route_id,
+        "route_name": route["name"],
+        "vehicle_id": vehicle_id,
+        "vehicle_name": vehicle["name"],
+        "vehicle_registration": vehicle["registration"],
+        "driver_id": driver_id,
+        "driver_name": driver_name,
+        "date": today,
+        "status": "pending",
+        "company_id": company_id,
+        "created_by": current_user["id"],
+        "created_at": datetime.utcnow()
+    }
+    
+    result = await db.daily_routes.insert_one(daily_route)
+    daily_route["_id"] = result.inserted_id
+    
+    return str_id(daily_route)
+
+@api_router.get("/daily-routes/pending")
+async def get_pending_daily_routes(current_user: dict = Depends(get_current_user)):
+    """Get routes that admin has dispatched (status='dispatched') ready for driver to start"""
+    if current_user.get("role") == "driver":
+        # Driver sees only dispatched routes assigned to them or unassigned
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        query = {
+            "date": today,
+            "status": "dispatched",
+            "$or": [
+                {"driver_id": current_user["id"]},
+                {"driver_id": None},
+                {"driver_id": ""}
+            ]
+        }
+        routes = await db.daily_routes.find(query).to_list(100)
+        return [str_id(r) for r in routes]
+    else:
+        # Admin sees pending and dispatched routes
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        cf = get_company_filter(current_user)
+        query = {
+            "date": today,
+            "status": {"$in": ["pending", "dispatched"]},
+            **cf
+        }
+        routes = await db.daily_routes.find(query).to_list(100)
+        return [str_id(r) for r in routes]
+
+@api_router.put("/daily-routes/{daily_route_id}/mark-dispatched")
+async def mark_route_dispatched(daily_route_id: str, current_user: dict = Depends(get_current_user)):
+    """Mark route as dispatched after stock loaded - ready for driver to start"""
+    if not is_admin_or_manager(current_user):
+        raise HTTPException(status_code=403, detail="Admin or Manager access required")
+    
+    daily_route = await db.daily_routes.find_one({"_id": ObjectId(daily_route_id)})
+    if not daily_route:
+        raise HTTPException(status_code=404, detail="Daily route not found")
+    
+    if daily_route.get("status") not in ["pending"]:
+        raise HTTPException(status_code=400, detail="Can only mark pending routes as dispatched")
+    
+    await db.daily_routes.update_one(
+        {"_id": ObjectId(daily_route_id)},
+        {"$set": {
+            "status": "dispatched",
+            "dispatched_by": current_user["id"],
+            "dispatched_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }}
+    )
+    
+    updated = await db.daily_routes.find_one({"_id": ObjectId(daily_route_id)})
+    return str_id(updated)
+
 @api_router.post("/daily-routes/start", response_model=DailyRouteResponse)
 async def start_daily_route(data: DailyRouteStart, current_user: dict = Depends(get_current_user)):
     today = datetime.utcnow().strftime("%Y-%m-%d")
