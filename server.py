@@ -4347,7 +4347,7 @@ async def get_customer_company_products(company_id: str, current_user: dict = De
     
     delivery_info = None
     if matching_route:
-        schedule = matching_route.get("delivery_schedule", {})
+        schedule = matching_route.get("delivery_schedule") or {}
         delivery_info = get_next_delivery_day(
             schedule.get("delivery_days", []),
             schedule.get("cut_off_hours_before", 16),
