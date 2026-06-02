@@ -57,9 +57,9 @@ app.add_middleware(
         "http://localhost:8081",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:8081",
+        "*"  # Allow all origins - necessary for mobile apps
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
+    allow_credentials=False,  # Must be False when allow_origins includes "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
