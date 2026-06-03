@@ -4433,7 +4433,7 @@ async def create_order(order: OrderCreate, current_user: dict = Depends(get_curr
     # Check delivery schedule and cut-off
     delivery_info = None
     if matching_route:
-        schedule = matching_route.get("delivery_schedule", {})
+        schedule = matching_route.get("delivery_schedule") or {}
         delivery_days = schedule.get("delivery_days", [])
         cut_off_hours = schedule.get("cut_off_hours_before", 16)
         cut_off_time_str = schedule.get("cut_off_time", "16:00")
