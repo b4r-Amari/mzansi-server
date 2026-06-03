@@ -1,0 +1,6 @@
+f = open('server.py', 'r', encoding='utf-8')
+lines = f.readlines()
+f.close()
+
+for i in range(4419, min(4460, len(lines))):
+    print(f"{i+1}: {lines[i]}", end='')

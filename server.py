@@ -3150,6 +3150,13 @@ async def seed_stock():
 
 # ==================== PDF EXPORT ====================
 
+def safe_str(value, default="N/A", max_len=None):
+    """Safely convert value to string, handling None values"""
+    result = str(value) if value is not None else default
+    if max_len and len(result) > max_len:
+        return result[:max_len]
+    return result
+
 @api_router.get("/reports/export/pdf")
 async def export_report_pdf(
     date_str: Optional[str] = None,
@@ -3262,9 +3269,9 @@ async def export_report_pdf(
             shortage = sale.get('shortage_amount', 0)
             
             sales_data.append([
-                sale.get('invoice_number', 'N/A')[:15],
-                sale.get('customer_name', 'N/A')[:15],
-                sale.get('driver_name', 'N/A')[:12],
+                safe_str(sale.get('invoice_number'), max_len=15),
+                safe_str(sale.get('customer_name'), max_len=15),
+                safe_str(sale.get('driver_name'), max_len=12),
                 ', '.join(items_list)[:25],
                 f"R {sale.get('total_amount', 0):.2f}",
                 f"R {sale.get('cash_collected', 0):.2f}",
@@ -3296,10 +3303,10 @@ async def export_report_pdf(
         route_data = [['Route', 'Driver', 'Vehicle', 'Status', 'Sales', 'Collected', 'Shortage', 'Crates Out', 'Crates In']]
         for dr in daily_routes:
             route_data.append([
-                dr.get('route_name', 'N/A')[:12],
-                dr.get('driver_name', 'N/A')[:10],
-                dr.get('vehicle_name', 'N/A')[:10],
-                dr.get('status', 'N/A'),
+                safe_str(dr.get('route_name'), max_len=12),
+                safe_str(dr.get('driver_name'), max_len=10),
+                safe_str(dr.get('vehicle_name'), max_len=10),
+                safe_str(dr.get('status')),
                 str(dr.get('sales_count', 0)),
                 f"R {dr.get('total_collected', 0):.2f}",
                 f"R {dr.get('total_shortage', 0):.2f}",
