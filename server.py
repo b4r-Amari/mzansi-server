@@ -1583,7 +1583,7 @@ async def update_daily_route(route_id: str, update: DailyRouteUpdate, current_us
     
     # Recalculate km traveled if both values present
     if "closing_km" in update_data or "opening_km" in update_data:
-        opening = update_data.get("opening_km", daily_route["opening_km"])
+        opening = update_data.get("opening_km", daily_route.get("opening_km"))
         closing = update_data.get("closing_km", daily_route.get("closing_km"))
         if closing and opening:
             update_data["km_traveled"] = closing - opening
