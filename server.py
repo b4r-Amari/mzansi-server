@@ -4473,8 +4473,8 @@ async def create_order(order: OrderCreate, current_user: dict = Depends(get_curr
         "customer_phone": current_user.get("phone", ""),
         "route_id": route_id,
         "route_name": route_name,
-        "items": [item.dict() for item in order.items],
-        "original_items": [item.dict() for item in order.items],
+        "items": [item.model_dump() for item in order.items],
+        "original_items": [item.model_dump() for item in order.items],
         "total_amount": total_amount,
         "status": "pending",
         "delivery_day": delivery_info.get("delivery_day", "") if delivery_info else "",
@@ -4618,7 +4618,7 @@ async def adjust_order(order_id: str, adjustment: OrderAdjust, current_user: dic
                     "adjusted_by": current_user["id"],
                     "adjusted_by_name": current_user.get("name", ""),
                     "reason": adjustment.adjustment_reason,
-                    "items": [i.dict() for i in adjustment.items],
+                    "items": [i.model_dump() for i in adjustment.items],
                     "timestamp": datetime.utcnow().isoformat()
                 },
                 "status_history": {"status": "adjusted", "timestamp": datetime.utcnow().isoformat(), "by": current_user["id"]}
