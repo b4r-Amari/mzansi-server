@@ -415,16 +415,16 @@ class DailyRouteResponse(BaseModel):
     driver_name: str
     date: str
     opening_km: float
-    closing_km: Optional[float]
-    km_traveled: Optional[float]
+    closing_km: Optional[float] = None
+    km_traveled: Optional[float] = None
     crates_out: int
-    crates_in: Optional[int]
-    damages_count: int
+    crates_in: Optional[int] = None
+    damages_count: int = 0
     status: str  # active, completed
-    sales_count: int
-    total_collected: float
-    total_expected: float = 0  # Total invoice amounts
-    total_shortage: float = 0  # Total shortages (Expected - Collected)
+    sales_count: int = 0
+    total_collected: float = 0.0
+    total_expected: float = 0.0  # Total invoice amounts
+    total_shortage: float = 0.0  # Total shortages (Expected - Collected)
     vehicle_check: Optional[Dict[str, Any]] = None  # Vehicle inspection data
 
 # ==================== AUTH HELPERS ====================
